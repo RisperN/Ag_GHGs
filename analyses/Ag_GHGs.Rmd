@@ -1,0 +1,44 @@
+---
+title: "AgGHGs"
+output: html_document
+date: "2024-07-31"
+author: "Risper Nyairo"
+---
+
+```{r load packages}
+#Load Required Packages
+library(dplyr)
+library(gasfluxes)
+```
+
+
+
+```{r load file}
+setwd("")
+
+#Import and transform CSV data
+Fluxdata <- read.csv("N2O_postRun.csv", header = TRUE)
+
+Fluxdata2 <- Fluxdata %>%
+  filter(TimeStep %in% c("T0", "T1", "T2") & plotNo==1 ) %>%
+  group_by(date,TimeStep) %>%
+  mutate(avArea=mean(N2O_area, na.rm = TRUE), avConc=mean(N2O_conc, na.rm = TRUE)) %>%
+  mutate(N2O_area=coalesce(N2O_area, avArea),
+         N2O_conc=coalesce(N2O_conc, avConc)) %>%
+  ungroup()
+
+#Average all replicates in one site per date
+Fluxdata3 <- Fluxdata2 %>%
+  distinct(avConc, .keep_all = TRUE)
+```
+
+
+```{r N2O flux calculation}
+#Fluxes per chamber
+flux.results <- gasfluxes(Fluxdata2, .V = "cham_V", .A = "cham_A", .C = "N2O_conc", method = c("linear"), plot = TRUE)
+
+#Fluxes per site
+flux.results3 <- gasfluxes(Fluxdata3, .V = "cham_V", .A = "cham_A", .C = "avConc", method = c("linear"), plot = TRUE)
+```
+
+
